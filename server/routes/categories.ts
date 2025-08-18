@@ -3,6 +3,7 @@ import pool from "../db";
 import type { RowDataPacket } from "mysql2/promise";
 import { auth } from "../middleware/auth"; 
 
+// ALL OF THEM REQUIRE A VALID JWT 
 const router = Router();
 
 

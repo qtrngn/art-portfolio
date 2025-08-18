@@ -49,17 +49,24 @@ export default function ArtDetail() {
     }
   };
 
-  if (loading) return <div className="p-4 text-gray-500">Loading…</div>;
+  if (loading) return <div className="p-4 text-white/80">Loading…</div>;
+
   if (error) {
     return (
-      <div className="p-4">
-        <button onClick={() => navigate(-1)} className="mb-4 rounded-md bg-gray-200 px-3 py-1.5">
+      <div className="p-4 max-w-4xl mx-auto">
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-4 rounded-full bg-white/15 px-4 py-2 text-white hover:bg-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+        >
           ← Back
         </button>
-        <div className="rounded-md border border-rose-200 bg-rose-50 text-rose-700 px-3 py-2">{error}</div>
+        <div className="rounded-2xl border border-rose-300/40 bg-rose-500/15 text-rose-200 px-3 py-2">
+          {error}
+        </div>
       </div>
     );
   }
+
   if (!art) return null;
 
   const imgSrc = resolveImageSrc(art.image);
@@ -68,34 +75,33 @@ export default function ArtDetail() {
     <div className="p-4 max-w-4xl mx-auto">
       <button
         onClick={() => navigate(-1)}
-        className="mb-4 rounded-md bg-gray-200 px-3 py-1.5 text-gray-800 hover:bg-gray-300"
+        className="mb-4 rounded-full bg-white/15 px-4 py-2 text-white hover:bg-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
       >
         ← Back
       </button>
 
       {!editing ? (
-        <div className="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 overflow-hidden">
+        <div className="overflow-hidden rounded-2xl bg-black/25 text-white ring-1 ring-white/10 backdrop-blur-xl shadow-2xl">
           {imgSrc ? (
-            <img src={imgSrc} alt={art.title} className="w-full h-72 object-cover" />
+            <img src={imgSrc} alt={art.title ?? ""} className="w-full h-72 object-cover" />
           ) : (
-            <div className="w-full h-72 bg-gray-100 flex items-center justify-center text-gray-400">
-              No image
-            </div>
+            <div className="w-full h-72 bg-white/5 flex items-center justify-center text-white/60">No image</div>
           )}
+
           <div className="p-6">
-            <h1 className="text-2xl font-semibold text-gray-900">{art.title}</h1>
-            {art.description && <p className="mt-2 text-gray-700">{art.description}</p>}
+            <h1 className="text-2xl font-semibold">{art.title}</h1>
+            {art.description && <p className="mt-2 text-white/80">{art.description}</p>}
 
             <div className="mt-6 flex gap-3">
               <button
                 onClick={() => setEditing(true)}
-                className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2.5 text-white font-medium hover:bg-indigo-700"
+                className="inline-flex items-center rounded-md bg-white/15 px-3 py-1.5 text-sm hover:bg-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
               >
                 Edit
               </button>
               <button
                 onClick={handleDelete}
-                className="inline-flex items-center rounded-lg bg-rose-600 px-4 py-2.5 text-white font-medium hover:bg-rose-700"
+                className="inline-flex items-center rounded-md bg-[#8b0000] px-3 py-1.5 text-sm hover:bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
               >
                 Delete
               </button>

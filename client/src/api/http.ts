@@ -22,12 +22,27 @@ http.interceptors.request.use((cfg) => {
 http.interceptors.response.use(
   (r) => r,
   (err) => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem("token");
-      window.location.href = "/login"; 
+    const status = err?.response?.status;
+    if (status === 401) {
+      const url = (err?.config?.url || "").toString();
+
+      const isAuthCall =
+        url.includes("/users/sign-in") ||
+        url.includes("/users/sign-up") ||
+        url.includes("/users/refresh");
+
+      if (!isAuthCall) {
+        localStorage.removeItem("token");
+        if (window.location.pathname !== "/login") {
+          window.location.replace("/login");
+        }
+      }
     }
     return Promise.reject(err);
   }
 );
 
 export default http;
+
+// Adds `Authorization: Bearer <token>` to each request when a token exists.
+// On 401 responses (except for auth endpoints), clears the token and redirects the user to `/login`.

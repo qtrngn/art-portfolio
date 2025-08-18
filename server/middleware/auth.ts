@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { verify } from '../utils/jwt';
 
+// EXPECT A TOKEN IN THE AUTHENTICATION HEADER
+// VERIFIES THE JWT AND ATTACHES THE USERID TO THE REQUEST OBJECT
 export function auth(req: Request, res: Response, next: NextFunction) {
   const h = req.header('Authorization') || '';
   const token = h.startsWith('Bearer ') ? h.slice(7) : '';

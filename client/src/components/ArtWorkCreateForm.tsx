@@ -36,42 +36,45 @@ export default function ArtworkCreateForm({ onCreated }: Props) {
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-4">
-      <h2 className="text-lg font-semibold text-gray-900">Add new artwork</h2>
+    <form onSubmit={onSubmit} className="space-y-4">
+      <h2 className="text-lg font-semibold text-white">add new artwork</h2>
 
-      {error && <div className="rounded-md bg-rose-50 text-rose-700 border border-rose-200 px-3 py-2">{error}</div>}
+      {error && <div className="rounded-md bg-rose-500/15 text-rose-200 border border-rose-300/40 px-3 py-2">{error}</div>}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Title</label>
+        <label className="block text-sm font-medium text-white/90">title</label>
         <input
-          className="text-black mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500"
+          className="mt-1 block w-full rounded-xl border-0 bg-white/10 px-3 py-2 text-white placeholder-white/60 shadow-sm focus:outline-none focus:ring-2 focus:ring-white/40"
           value={title} onChange={e=>setTitle(e.target.value)} required
+          placeholder="Your art's name"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Description</label>
+        <label className="block text-sm font-medium text-white/90">description</label>
         <textarea
-          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 text-black"
+          className="mt-1 block w-full rounded-xl border-0 bg-white/10 px-3 py-2 text-white placeholder-white/60 shadow-sm focus:outline-none focus:ring-2 focus:ring-white/40"
           rows={3} value={description} onChange={e=>setDescription(e.target.value)}
+          placeholder="Describe your art..."
         />
       </div>
 
-      <CategorySelect value={categoryId} onChange={setCategoryId} includeAll={false} />
+      
+      <CategorySelect value={categoryId} onChange={setCategoryId} />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Image (optional)</label>
+        <label className="block text-sm font-medium text-white/90">image</label>
         <input
           type="file" accept="image/*"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className="mt-1 block w-full text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-gray-700 hover:file:bg-gray-200"
+          className="mt-1 block w-full text-sm text-white/90 file:mr-4 file:rounded-md file:border-0 file:bg-white/15 file:px-3 file:py-2 file:text-white hover:file:bg-white/25"
         />
       </div>
 
       <button
         type="submit"
         disabled={submitting}
-        className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-white font-medium hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+        className="inline-flex items-center justify-center rounded-2xl bg-white/15 px-4 py-2.5 text-white font-medium hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/40 disabled:opacity-50"
       >
         {submitting ? "Creating..." : "Create"}
       </button>

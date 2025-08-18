@@ -8,7 +8,7 @@ type Props = {
   includeAll?: boolean;
 };
 
-export default function CategorySelect({ value, onChange, includeAll = true }: Props) {
+export default function CategorySelected({ value, onChange, includeAll = true }: Props) {
   const [cats, setCats] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -17,7 +17,9 @@ export default function CategorySelect({ value, onChange, includeAll = true }: P
     (async () => {
       try {
         const { data } = await http.get<Category[]>("/categories");
-        if (ok) setCats(data);
+        if (ok) setCats(data || []);
+      } catch {
+        if (ok) setCats([]);
       } finally {
         if (ok) setLoading(false);
       }
@@ -25,20 +27,37 @@ export default function CategorySelect({ value, onChange, includeAll = true }: P
     return () => { ok = false; };
   }, []);
 
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-      <select
-        value={value ?? ""}
-        onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
-        disabled={loading}
-        className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+  if (loading) {
+    return (
+      <ul className="space-y-2">
+        <li className="h-9 w-full rounded-lg bg-white/10 animate-pulse" />
+        <li className="h-9 w-full rounded-lg bg-white/10 animate-pulse" />
+        <li className="h-9 w-full rounded-lg bg-white/10 animate-pulse" />
+      </ul>
+    );
+  }
+
+  const Item = ({ id, label }: { id: number | null; label: string }) => {
+    const active = value === id || (id === null && value === null);
+    return (
+      <button
+        type="button"
+        onClick={() => onChange(id)}
+        className={`w-full text-left rounded-lg px-3 py-2 transition
+          ${active ? "bg-white/20 ring-1 ring-white/20" : "hover:bg-white/10"}
+          text-white`}
       >
-        {includeAll && <option value="">All</option>}
-        {cats.map(c => (
-          <option key={c.id} value={c.id}>{c.name}</option>
-        ))}
-      </select>
-    </div>
+        {label}
+      </button>
+    );
+  };
+
+  return (
+    <ul className="space-y-2">
+      {includeAll && <li><Item id={null} label="No category" /></li>}
+      {cats.map((c) => (
+        <li key={c.id}><Item id={c.id} label={c.name} /></li>
+      ))}
+    </ul>
   );
 }

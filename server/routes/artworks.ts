@@ -6,10 +6,9 @@ import type { RowDataPacket, ResultSetHeader } from "mysql2/promise";
 
 const router = Router();
 
-// Helper for Option A (cast Request to read userId set by auth middleware)
 const uid = (req: Request) => (req as Request & { userId: number }).userId;
 
-// GET my artworks (optional ?category_id=)
+// RETURN ARTWORKS FOR AUTHENTICATED USERS
 router.get("/", auth, async (req: Request, res: Response) => {
   try {
     const userId = uid(req);
@@ -30,7 +29,7 @@ router.get("/", auth, async (req: Request, res: Response) => {
   }
 });
 
-// GET one of my artworks by id
+// RETURN 1 SINGLE ARTWORK
 router.get("/:id", auth, async (req: Request, res: Response) => {
   try {
     const userId = uid(req);
@@ -48,7 +47,7 @@ router.get("/:id", auth, async (req: Request, res: Response) => {
   }
 });
 
-// CREATE artwork 
+// CREATE ARTWORKS 
 router.post(
   "/",
   auth,
@@ -77,7 +76,7 @@ router.post(
   }
 );
 
-// UPDATE artwork (only if I own it)
+// UPDATE ARTWORK
 router.put("/:id", auth, async (req: Request, res: Response) => {
   try {
     const userId = uid(req);
@@ -98,7 +97,7 @@ router.put("/:id", auth, async (req: Request, res: Response) => {
   }
 });
 
-// DELETE artwork (only if I own it)
+// DELETE ARTWORK
 router.delete("/:id", auth, async (req: Request, res: Response) => {
   try {
     const userId = uid(req);
