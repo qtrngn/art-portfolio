@@ -1,112 +1,193 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useEffect, useMemo, useState } from "react";
+import http from "../api/http";
+import { resolveImageSrc } from "../utils/images";
 
-// DEFINE THE TYPE
-interface Artwork {
+type Artwork = {
   id: number;
   title: string;
-  description: string;
-  category_id: number;
-  image: string;
-}
+  description: string | null;
+  category_id: number | null;
+  image: string | null; 
+};
 
-interface Category {
-  id: number;
-  name: string;
-}
+type Category = { id: number; name: string };
 
-// PROPS EXPECTED 
-interface ArtEditFormProps {
+type Props = {
   artwork: Artwork;
   onCancel: () => void;
-  onUpdate: () => void;
-}
+  onUpdate: () => void; 
+};
 
-// FUNCTIONAL DEFINITION
-const ArtEditForm: React.FC<ArtEditFormProps> = ({
-  artwork,
-  onCancel,
-  onUpdate,
-}) => {
-// STATES INITIALIZED WITH THE ARTWORK VALUES
+const ArtEditForm: React.FC<Props> = ({ artwork, onCancel, onUpdate }) => {
   const [title, setTitle] = useState(artwork.title);
-  const [description, setDescription] = useState(artwork.description);
-  const [categoryId, setCategoryId] = useState(artwork.category_id);
+  const [description, setDescription] = useState(artwork.description ?? "");
+  const [categoryId, setCategoryId] = useState<number | "">(
+    artwork.category_id ?? ""
+  );
   const [categories, setCategories] = useState<Category[]>([]);
+  const [file, setFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-//   LOAD CATEGORIES
+  // Preview for newly selected image
+  const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
   useEffect(() => {
-    axios
-      .get("http://localhost:3000/categories")
-      .then((res) => setCategories(res.data))
-      .catch((err) => console.error("Failed to load categories", err));
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  // Load categories (protected endpoint)
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const { data } = await http.get<Category[]>("/categories");
+        if (alive) setCategories(data);
+      } catch (e: any) {
+        if (alive) setError(e?.response?.data?.error || "Failed to load categories");
+      }
+    })();
+    return () => {
+      alive = false;
+    };
   }, []);
 
-//   HANDLE FORM SUBMISSION AND UPDATE ARTWORKS
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    if (!title.trim()) return setError("Title is required.");
+
+    setSaving(true);
     try {
-      await axios.put(`http://localhost:3000/artworks/${artwork.id}`, {
-        title,
-        description,
-        category_id: categoryId,
-      });
+      if (file) {
+        // If replacing the image, use multipart/form-data
+        const fd = new FormData();
+        fd.append("title", title.trim());
+        fd.append("description", description.trim());
+        if (categoryId !== "") fd.append("category_id", String(categoryId));
+        fd.append("image", file); // field name must match upload.single("image")
+
+        await http.put(`/artworks/${artwork.id}`, fd); // let the browser set the boundary
+      } else {
+        // Text-only update → JSON is fine
+        await http.put(`/artworks/${artwork.id}`, {
+          title: title.trim(),
+          description: description.trim(),
+          category_id: categoryId === "" ? null : Number(categoryId),
+        });
+      }
+
       onUpdate();
-    } catch (err) {
-      console.error("Failed to update artwork", err);
+    } catch (e: any) {
+      setError(e?.response?.data?.error || "Failed to update artwork");
+    } finally {
+      setSaving(false);
     }
   };
 
+  const currentImageSrc = resolveImageSrc(artwork.image);
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded">
-      <h2 className="text-xl font-semibold">Edit Artwork</h2>
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4 bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-4"
+    >
+      <h2 className="text-lg font-semibold text-gray-900">Edit Artwork</h2>
+
+      {error && (
+        <div className="rounded-md border border-rose-200 bg-rose-50 text-rose-700 px-3 py-2">
+          {error}
+        </div>
+      )}
+
+      {/* Current image (if any) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Current Image</label>
+          <div className="rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
+            {currentImageSrc ? (
+              <img src={currentImageSrc} alt={artwork.title} className="w-full h-48 object-cover" />
+            ) : (
+              <div className="w-full h-48 flex items-center justify-center text-gray-400">No image</div>
+            )}
+          </div>
+        </div>
+
+        {/* New image preview (if chosen) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">New Image Preview</label>
+          <div className="rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
+            {previewUrl ? (
+              <img src={previewUrl} alt="Preview" className="w-full h-48 object-cover" />
+            ) : (
+              <div className="w-full h-48 flex items-center justify-center text-gray-400">No new image selected</div>
+            )}
+          </div>
+        </div>
+      </div>
 
       <div>
-        <label className="block font-medium">Title</label>
+        <label className="block text-sm font-medium text-gray-700">Replace Image (optional)</label>
         <input
-          type="text"
+          type="file"
+          accept="image/*"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          className="mt-1 block w-full text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-2 hover:file:bg-gray-200"
+        />
+        {artwork.image && (
+          <p className="mt-1 text-xs text-gray-500 break-all">Current filename/value: {String(artwork.image)}</p>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Title</label>
+        <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="border w-full p-2 rounded"
+          className="text-black mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500"
+          required
         />
       </div>
 
       <div>
-        <label className="block font-medium">Description</label>
+        <label className="block text-sm font-medium text-gray-700">Description</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="border w-full p-2 rounded"
+          rows={3}
+          className=" text-black mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500"
         />
       </div>
 
       <div>
-        <label className="block font-medium">Category</label>
+        <label className="block text-sm font-medium text-gray-700">Category</label>
         <select
           value={categoryId}
-          onChange={(e) => setCategoryId(Number(e.target.value))}
-          className="border w-full p-2 rounded"
+          onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : "")}
+          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500"
         >
           <option value="">Select a category</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
             </option>
           ))}
         </select>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex gap-3">
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          disabled={saving}
+          className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2.5 text-white font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
         >
-          Save Changes
+          {saving ? "Saving..." : "Save Changes"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="bg-gray-400 text-white px-4 py-2 rounded"
+          className="inline-flex items-center rounded-lg bg-gray-200 px-4 py-2.5 text-gray-800 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
         >
           Cancel
         </button>

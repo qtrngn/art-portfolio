@@ -1,28 +1,44 @@
-import multer, { FileFilterCallback } from "multer";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import crypto from "crypto";
 import { Request } from "express";
 
-const storage = multer.diskStorage({
-  // Set the destination for upload files
-  destination: (
-    _req: Request,
-    _file: Express.Multer.File,
-    cb: (error: Error | null, destination: string) => void
-  ) => {
-    // "public/images" is the directory where files will be stored, because we are using the "public" folder as static folder
-    cb(null, "public/images");
-  },
+const IMAGES_DIR = path.join(process.cwd(), "public", "images");
+fs.mkdirSync(IMAGES_DIR, { recursive: true });
 
-  // Set the file name for uploaded file
-  filename: (
-    _req: Request,
-    file: Express.Multer.File,
-    cb: (error: Error | null, destination: string) => void
-  ) => {
-    cb(null, Date.now() + "-" + file.originalname.replace(/\s+/g, "_"));
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, IMAGES_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const safeBase = path
+      .basename(file.originalname)         
+      .replace(/\s+/g, "_")                 
+      .replace(/[^a-zA-Z0-9._-]/g, "");     
+    const ext = path.extname(safeBase) || ""; 
+    const id = crypto.randomUUID();
+    cb(null, `${Date.now()}-${id}${ext}`);
   },
 });
-// Create the middleware with the storage configuration above
-const upload = multer({ storage });
 
-// Export the middleware
+const allowed = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/jpg",
+]);
+
+const fileFilter: multer.Options["fileFilter"] = (_req: Request, file, cb) => {
+  if (allowed.has(file.mimetype)) return cb(null, true);
+  cb(new Error("Only image files are allowed"));
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, 
+});
+
 export default upload;
